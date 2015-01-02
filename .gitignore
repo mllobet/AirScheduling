@@ -29,3 +29,6 @@
 
 # Mac love
 .DS_Store
+
+# vim
+*.swp

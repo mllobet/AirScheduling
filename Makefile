@@ -3,7 +3,7 @@ SRC = main.cc Solver.cc
 OBJ = ${SRC:.cc=.o}
 CC = g++	
 
-CFLAGS = -Wall -O3
+CFLAGS = -Wall -O3 -std=c++11
 
 all: options ${BIN}
 
