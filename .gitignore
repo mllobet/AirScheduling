@@ -26,3 +26,6 @@
 *.exe
 *.out
 *.app
+
+# Mac love
+.DS_Store
