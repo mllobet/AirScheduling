@@ -134,22 +134,59 @@ void Solver::edmond_karp(VVI & res, int s, int t) {
 }
 
 
+// RESULTS. This modifies the residual graph
+// k is the number of pilots.
+// s_ini the source before applying nodes' demand
+// t_ini the sink before applying nodes' demand
+VVI Solver::get_results(int k, int s_ini, int t_ini, int num_flights, VVI &adj, VE &edges) {
+  VI act(adj.size(), 0);
+  vector<bool> taken(num_flights, false);
+  VVI results(k);
+  for (int id = 0; id < k; ++id) {
+    int u = s_ini;
+    while (u != t_ini) {
+      int & ind = act[u];
+      bool found = false;
+      while (!found and ind < int(adj[u].size())) {
+        Edge & e = edges[adj[u][ind]];
+        int v = e.to(u);
+        if (e.flow(u) > 0) {
+          e.add(u, -1);
+          u = v;
+          found = true;
+        }
+        ++ind;
+      }
+      if (u != t_ini) {
+        int flight_id = u/2;
+        if (!taken[flight_id]) {
+          results[id].push_back(flight_id);
+          taken[flight_id] = true;
+        }
+        ++u; // Go to second node of that flight
+      }
+    }
+  }
+  return results;
+}
 
 
 // DINIC
 
 // BFS to build the residual graph and distances for level graph.
 // Returns true if there is a path from s to t with cap > 0
-bool Solver::d_bfs(int s, int t, VI & distance, VVI & flow, VVI & cap) {
+bool Solver::bfs(int s, int t, VI & distance, const VVI & adj, const VE & edges) {
   queue<int> q;
   q.push(s);
-  for (int i = 0; i < int(flow.size()); ++i) distance[i] = -1;
+  for (int i = 0; i < int(distance.size()); ++i) distance[i] = -1;
 	distance[s] = 0;
 
   while (!q.empty()) {
     int u = q.front(); q.pop();
-    for (int v = 0; v < int(flow.size()); ++v) {
-      if (distance[v] == -1 and flow[u][v] < cap[u][v]) {
+    for (int i : adj[u]) {
+      Edge edge = edges[i];
+      int v = edge.to(u);
+      if (edge.cap(u) > 0 and distance[v] == -1) {
         q.push(v);
         distance[v] = distance[u]+1;
       }
@@ -158,31 +195,34 @@ bool Solver::d_bfs(int s, int t, VI & distance, VVI & flow, VVI & cap) {
   return distance[t] != -1;
 }
  
-int Solver::d_dfs (int u, int t, int fval, const VI & distance, VVI & flow, VVI & cap, VI & index) {
+int Solver::dfs (int u, int t, int fval, const VI & distance, const VVI & adj, VE & edges, VI & index) {
 	if (!fval)  return 0;
 	if (u == t)  return fval;
-  int & v = index[u];
-  while (v < int(flow.size())) {
-    int c = cap[u][v] - flow[u][v];
+  int & ind = index[u];
+  while (ind < int(adj[u].size())) {
+    Edge & edge = edges[adj[u][ind]];
+    int v = edge.to(u);
+    int c = edge.cap(u);
+
     if (distance[u]+1 == distance[v] and c > 0) {
-      int f = d_dfs(v, t, min(fval, c), distance, flow, cap, index);
+      int f = dfs(v, t, min(fval, c), distance, adj, edges, index);
       if (f) {
-        flow[u][v] += f;
-        flow[v][u] -= f;
+        edge.add(u, f);
         return f;
       }
     }
-    ++v;
+    ++ind;
   }
   return 0;
 }
  
-int Solver::dinic(int s, int t, VVI & flow, VVI & cap) {
+int Solver::dinic(int s, int t, VVI & adj, VE & edges) {
 	int fval = 0;
-  VI distance(flow.size());
-  while (d_bfs(s, t, distance, flow, cap)) {
+  VI distance(adj.size());
+  while (bfs(s, t, distance, adj, edges)) {
     VI index(distance.size(), 0);
-		while (int f = d_dfs(s, t, INF, distance, flow, cap, index)) fval += f;
+		while (int f = dfs(s, t, INF, distance, adj, edges, index))
+      fval += f;
 	}
 	return fval;
 }
