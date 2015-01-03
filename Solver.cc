@@ -1,4 +1,7 @@
 #include "Solver.hh"
+#include <queue>
+
+const int Solver::INF = 1000000000;
 
 Solver::Solver(){
     
@@ -96,3 +99,55 @@ VII Solver::solve_v2(Algorithm a) {
 //        res[v][p[v]] += f;
 //    }
 //}
+
+
+// DINIC
+
+// BFS to build the residual graph and distances for level graph.
+// Returns true if there is a path from s to t with cap > 0
+bool Solver::d_bfs(int s, int t, VI & distance, VVI & flow, VVI & cap) {
+  queue<int> q;
+  q.push(s);
+  for (int i = 0; i < int(flow.size()); ++i) distance[i] = -1;
+	distance[s] = 0;
+
+  while (!q.empty()) {
+    int u = q.front(); q.pop();
+    for (int v = 0; v < int(flow.size()); ++v) {
+      if (distance[v] == -1 and flow[u][v] < cap[u][v]) {
+        q.push(v);
+        distance[v] = distance[u]+1;
+      }
+    }
+  }
+  return distance[t] != -1;
+}
+ 
+int Solver::d_dfs (int u, int t, int fval, const VI & distance, VVI & flow, VVI & cap, VI & index) {
+	if (!fval)  return 0;
+	if (u == t)  return fval;
+  int & v = index[u];
+  while (v < int(flow.size())) {
+    int c = cap[u][v] - flow[u][v];
+    if (distance[u]+1 == distance[v] and c > 0) {
+      int f = d_dfs(v, t, min(fval, c), distance, flow, cap, index);
+      if (f) {
+        flow[u][v] += f;
+        flow[v][u] -= f;
+        return f;
+      }
+    }
+    ++v;
+  }
+  return 0;
+}
+ 
+int Solver::dinic(int s, int t, VVI & flow, VVI & cap) {
+	int fval = 0;
+  VI distance(flow.size());
+  while (d_bfs(s, t, distance, flow, cap)) {
+    VI index(distance.size(), 0);
+		while (int f = d_dfs(s, t, INF, distance, flow, cap, index)) fval += f;
+	}
+	return fval;
+}
