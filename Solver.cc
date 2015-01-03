@@ -73,6 +73,7 @@ VVI Solver::solve_v1(Algorithm a) {
     
     switch (a) {
         case EdmondsKarp :
+            
             break;
         case FordFulkerson :
             break;
@@ -106,7 +107,7 @@ void Solver::augment_ek(int v, int minEdge, VVI &res, VI &p, int &f, int s) {
     }
 }
 
-void Solver::edmond_karp(VVI & res, int s, int t) {
+int Solver::edmond_karp(VVI & res, int s, int t) {
     int mf, f;
     mf = f = 0;
     VI p;
@@ -131,6 +132,7 @@ void Solver::edmond_karp(VVI & res, int s, int t) {
         if (f == 0) break;
         mf += f;
     }
+    return mf;
 }
 
 

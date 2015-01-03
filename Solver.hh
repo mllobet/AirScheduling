@@ -49,5 +49,5 @@ class Solver {
 
         // Edmond Karp's algorithm
         void augment_ek(int v, int minEdge, VVI &res, VI &p, int &f, int s);
-        void edmond_karp(VVI &res, int s, int t);
+        int edmond_karp(VVI &res, int s, int t);
 };
