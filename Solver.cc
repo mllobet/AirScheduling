@@ -36,7 +36,7 @@ VII Solver::solve_v1(Algorithm a) {
     VI demands(size);
 
     map<int,VI> city_flights; 
-    for(int i = 0; i < _flights.size(); ++i) {
+    for(int i = 0; i < int(_flights.size()); ++i) {
         int orig = _flights[i].orig; 
         //res[2*i][2*i+1] = 1; // set the capacity between the 2 nodes to 1
         if (city_flights.find(orig) == city_flights.end()) {
@@ -46,7 +46,7 @@ VII Solver::solve_v1(Algorithm a) {
     }
 
     // add connecting flights
-    for(int i = 0; i < _flights.size(); ++i) {
+    for(int i = 0; i < int(_flights.size()); ++i) {
         for (int flight: city_flights[_flights[i].dest]) {
             if (_flights[i].end + 15 <= _flights[flight].start) {
                 res[2*i+1][flight] = 1;
@@ -55,13 +55,13 @@ VII Solver::solve_v1(Algorithm a) {
     }
 
     // source and drain initial connections 
-    for(int i = 0; i < _flights.size(); ++i){
+    for(int i = 0; i < int(_flights.size()); ++i){
         res[s][2*i] = 1;
         res[d][2*i+1] = 1; 
     } 
 
     // source and drain connections to set demand 
-    for(int i = 0; i < _flights.size(); ++i) {
+    for(int i = 0; i < int(_flights.size()); ++i) {
         res[s][2*i+1]++;
         res[d][2*i]++;
     }
