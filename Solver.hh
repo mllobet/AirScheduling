@@ -6,7 +6,6 @@
 using namespace std;
 
 typedef vector<int> VI;
-typedef vector<VI> VII;
 typedef vector<VI> VVI;
 
 struct flight {
@@ -24,8 +23,8 @@ class Solver {
         Solver();
         void read();
         void read(istream &file);
-        VII solve_v1(Algorithm a);
-        VII solve_v2(Algorithm a);
+        VVI solve_v1(Algorithm a);
+        VVI solve_v2(Algorithm a);
 
     private: 
         static const int INF;
@@ -35,5 +34,7 @@ class Solver {
         int d_dfs (int u, int t, int fval, const VI & distance, VVI & flow, VVI & cap, VI & index);
         vector<flight> _flights;
 
-        //void augment_ek(int v, int minEdge, VII res, VI &p, int &f, int s);
+        // Edmond Karp's algorithm
+        void augment_ek(int v, int minEdge, VVI &res, VI &p, int &f, int s);
+        void edmond_karp(VVI &res, int s, int t);
 };

@@ -25,18 +25,20 @@ void Solver::read(istream &is) {
  * Solves version 1 of the problem, returns a list of crew assignations, one
  * per element
  */
-VII Solver::solve_v1(Algorithm a) {
+VVI Solver::solve_v1(Algorithm a) {
     // Build graph
 
     // create 2 nodes per flight v_i and t_i (where v_i is in pos 2*i and t_i in 2*i + 1)
-    int size = _flights.size()*2 + 2;
+    int size = _flights.size()*2 + 4;
     int s = size - 2;
-    int d = size - 1;
-    VII res(size, VI(size));
+    int t = size - 1;
+    int s_ini = s - 2;
+    int t_ini = s - 1;
+    VVI res(size, VI(size));
     VI demands(size);
 
     map<int,VI> city_flights; 
-    for(int i = 0; i < int(_flights.size()); ++i) {
+    for (int i = 0; i < int(_flights.size()); ++i) {
         int orig = _flights[i].orig; 
         //res[2*i][2*i+1] = 1; // set the capacity between the 2 nodes to 1
         if (city_flights.find(orig) == city_flights.end()) {
@@ -46,7 +48,7 @@ VII Solver::solve_v1(Algorithm a) {
     }
 
     // add connecting flights
-    for(int i = 0; i < int(_flights.size()); ++i) {
+    for (int i = 0; i < int(_flights.size()); ++i) {
         for (int flight: city_flights[_flights[i].dest]) {
             if (_flights[i].end + 15 <= _flights[flight].start) {
                 res[2*i+1][flight] = 1;
@@ -55,16 +57,18 @@ VII Solver::solve_v1(Algorithm a) {
     }
 
     // source and drain initial connections 
-    for(int i = 0; i < int(_flights.size()); ++i){
-        res[s][2*i] = 1;
-        res[d][2*i+1] = 1; 
+    for (int i = 0; i < int(_flights.size()); ++i){
+        res[s_ini][2*i] = 1;
+        res[t_ini][2*i+1] = 1; 
     } 
 
     // source and drain connections to set demand 
-    for(int i = 0; i < int(_flights.size()); ++i) {
+    for (int i = 0; i < int(_flights.size()); ++i) {
         res[s][2*i+1]++;
-        res[d][2*i]++;
+        res[t][2*i]++;
     }
+
+    // actual algorithm has to set up the source and drain connections to s_ini and d_ini
 
     
     switch (a) {
@@ -73,10 +77,10 @@ VII Solver::solve_v1(Algorithm a) {
         case FordFulkerson :
             break;
     }
-    return VII();
+    return VVI();
 }
 
-VII Solver::solve_v2(Algorithm a) {
+VVI Solver::solve_v2(Algorithm a) {
     // Build graph
     
     switch (a) {
@@ -85,20 +89,51 @@ VII Solver::solve_v2(Algorithm a) {
         case FordFulkerson :
             break;
     }
-    return VII();
+    return VVI();
 }
 
-//void Solver::augment_ek(int v, int minEdge, VII res, VI &p, int &f, int s) {
-//    if (v == s) {
-//        f = minEdge;
-//        return;
-//    }
-//    else if (p[v] != -1) {
-//        augment(p[v], min(minEdge, res[p[v]][v]));
-//        res[p[v]][v] -= f;
-//        res[v][p[v]] += f;
-//    }
-//}
+// Edmonds Karp's
+
+void Solver::augment_ek(int v, int minEdge, VVI &res, VI &p, int &f, int s) {
+    if (v == s) {
+        f = minEdge;
+        return;
+    }
+    else if (p[v] != -1) {
+        Solver::augment_ek(p[v], min(minEdge, res[p[v]][v]), res, p, f, s);
+        res[p[v]][v] -= f;
+        res[v][p[v]] += f;
+    }
+}
+
+void Solver::edmond_karp(VVI & res, int s, int t) {
+    int mf, f;
+    mf = f = 0;
+    VI p;
+    while (true) {
+        f = 0; 
+        // run BFS
+        VI dist(res.size(), INF); dist[s] = 0;
+        queue<int> q; q.push(s);
+        p.assign(res.size(), -1); //BFS spanning tree, from s to t!
+        while (!q.empty()) {
+            int u = q.front(); q.pop();
+            if (u == t) break;
+            for (int v = 0; v < res.size(); ++v) {
+                if (res[u][v] > 0 && dist[v] == INF) {
+                    dist[v] = dist[u] + 1;
+                    q.push(v);
+                    p[v] = u;
+                }
+            }
+        }   
+        Solver::augment_ek(t, INF, res, p, f, s);
+        if (f == 0) break;
+        mf += f;
+    }
+}
+
+
 
 
 // DINIC
