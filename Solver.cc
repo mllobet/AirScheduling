@@ -72,19 +72,38 @@ VVI Solver::solve_v1(Algorithm a) {
 
     
     // To fill
-    int ans;
+    int source_edge, sink_edge; // Edges from source to s_ini, and from sink to t_ini
+    int num_flights = _flights.size();
     VVI adj;
     VE edges;
 
-    switch (a) {
-        case EdmondsKarp :
-            
-            break;
-        case FordFulkerson :
-            break;
-    }
+    // binary search in [low, high)
+    int low = 1, high = num_flights+1;
+    while (low < high) {
+      // Reset graph
+      for (Edge &e : edges) {
+        e.f = 0;
+      }
 
-    return get_results(ans, s_ini, t_ini, int(_flights.size()), adj, edges);
+      int mid = (high-low)/2 + low;
+      edges[source_edge].c = edges[sink_edge].c = mid;
+
+      int ans;
+      if (a == EdmondsKarp) {
+        ans = edmond_karp(s, t, adj, edges);
+      }
+      else {
+        ans = dinic(s, t, adj, edges);
+      }
+
+      if (ans == num_flights + mid) {
+        low = mid;
+      }
+      else {
+        high = mid;
+      }
+    }
+    return get_results(low, s_ini, t_ini, num_flights, adj, edges);
 }
 
 VVI Solver::solve_v2(Algorithm a) {
@@ -93,7 +112,7 @@ VVI Solver::solve_v2(Algorithm a) {
     switch (a) {
         case EdmondsKarp :
             break;
-        case FordFulkerson :
+        case Dinic :
             break;
     }
     return VVI();

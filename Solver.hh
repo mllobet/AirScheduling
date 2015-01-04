@@ -29,7 +29,7 @@ class Solver {
     public:
         enum Algorithm {
             EdmondsKarp,
-            FordFulkerson
+            Dinic
         };
 
         Solver();
