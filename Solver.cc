@@ -94,84 +94,36 @@ VVI Solver::solve_v2(Algorithm a) {
 }
 
 // Edmonds Karp's
-
-void Solver::augment_ek(int v, int minEdge, VVI &res, VI &p, int &f, int s) {
-    if (v == s) {
-        f = minEdge;
-        return;
-    }
-    else if (p[v] != -1) {
-        Solver::augment_ek(p[v], min(minEdge, res[p[v]][v]), res, p, f, s);
-        res[p[v]][v] -= f;
-        res[v][p[v]] += f;
-    }
-}
-
-int Solver::edmond_karp(VVI & res, int s, int t) {
-    int mf, f;
-    mf = f = 0;
-    VI p;
+int Solver::edmond_karp(int s, int t, VVI & graph, VE & edges) {
+    int mFlow = 0;
     while (true) {
-        f = 0; 
-        // run BFS
-        VI dist(res.size(), INF); dist[s] = 0;
-        queue<int> q; q.push(s);
-        p.assign(res.size(), -1); //BFS spanning tree, from s to t!
+        queue<int> q;
+        q.push(s);
+        VI pred(graph.size(), -1);
         while (!q.empty()) {
-            int u = q.front(); q.pop();
-            if (u == t) break;
-            for (int v = 0; v < res.size(); ++v) {
-                if (res[u][v] > 0 && dist[v] == INF) {
-                    dist[v] = dist[u] + 1;
-                    q.push(v);
-                    p[v] = u;
+            int cur = q.front(); q.pop();
+            if (pred[t] != -1) break;
+            for (int i : graph[cur]) {
+                Edge e = edges[i];
+                if (pred[e.v] == -1 and e.c > e.f) {
+                    pred[e.v] = i;
+                    q.push(e.v);
                 }
             }
-        }   
-        Solver::augment_ek(t, INF, res, p, f, s);
-        if (f == 0) break;
-        mf += f;
-    }
-    return mf;
-}
-
-
-// RESULTS. This modifies the residual graph
-// k is the number of pilots.
-// s_ini the source before applying nodes' demand
-// t_ini the sink before applying nodes' demand
-VVI Solver::get_results(int k, int s_ini, int t_ini, int num_flights, VVI &adj, VE &edges) {
-  VI act(adj.size(), 0);
-  vector<bool> taken(num_flights, false);
-  VVI results(k);
-  for (int id = 0; id < k; ++id) {
-    int u = s_ini;
-    while (u != t_ini) {
-      int & ind = act[u];
-      bool found = false;
-      while (!found and ind < int(adj[u].size())) {
-        Edge & e = edges[adj[u][ind]];
-        int v = e.to(u);
-        if (e.flow(u) > 0) {
-          e.add(u, -1);
-          u = v;
-          found = true;
         }
-        ++ind;
-      }
-      if (u != t_ini) {
-        int flight_id = u/2;
-        if (!taken[flight_id]) {
-          results[id].push_back(flight_id);
-          taken[flight_id] = true;
+        if (pred[t] == -1) break;
+        int df = INF;
+        for (int u = t; u != s; u = edges[pred[u]].u) {
+            df = min(df, edges[pred[u]].c - edges[pred[u]].f);
         }
-        ++u; // Go to second node of that flight
-      }
+        for (int u =t; u != s; u = edges[pred[u]].u) {
+            edges[pred[u]].f += df;
+            edges[graph[edges[pred[u]].v][edges[pred[u]].rev]].f -= df;
+        }
+        mFlow += df;
     }
-  }
-  return results;
+    return mFlow;
 }
-
 
 // DINIC
 
@@ -227,4 +179,47 @@ int Solver::dinic(int s, int t, VVI & adj, VE & edges) {
       fval += f;
 	}
 	return fval;
+}
+
+// RESULTS. This modifies the residual graph
+// k is the number of pilots.
+// s_ini the source before applying nodes' demand
+// t_ini the sink before applying nodes' demand
+VVI Solver::get_results(int k, int s_ini, int t_ini, int num_flights, VVI &adj, VE &edges) {
+  VI act(adj.size(), 0);
+  vector<bool> taken(num_flights, false);
+  VVI results(k);
+  for (int id = 0; id < k; ++id) {
+    int u = s_ini;
+    while (u != t_ini) {
+      int & ind = act[u];
+      bool found = false;
+      while (!found and ind < int(adj[u].size())) {
+        Edge & e = edges[adj[u][ind]];
+        int v = e.to(u);
+        if (e.flow(u) > 0) {
+          e.add(u, -1);
+          u = v;
+          found = true;
+        }
+        ++ind;
+      }
+      if (u != t_ini) {
+        int flight_id = u/2;
+        if (!taken[flight_id]) {
+          results[id].push_back(flight_id);
+          taken[flight_id] = true;
+        }
+        ++u; // Go to second node of that flight
+      }
+    }
+  }
+  return results;
+}
+
+void Solver::add_edge(VVI &graph, VE &edges, int u, int v, int cap) {
+    graph[u].push_back(edges.size());
+    graph[v].push_back(edges.size() + 1);
+    edges.push_back(Edge(u, v, cap, 0, graph[v].size() - 1));
+    edges.push_back(Edge(v, u, 0, 0, graph[u].size() - 1));
 }
