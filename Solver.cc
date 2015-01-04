@@ -71,6 +71,11 @@ VVI Solver::solve_v1(Algorithm a) {
     // actual algorithm has to set up the source and drain connections to s_ini and d_ini
 
     
+    // To fill
+    int ans;
+    VVI adj;
+    VE edges;
+
     switch (a) {
         case EdmondsKarp :
             
@@ -78,7 +83,8 @@ VVI Solver::solve_v1(Algorithm a) {
         case FordFulkerson :
             break;
     }
-    return VVI();
+
+    return get_results(ans, s_ini, t_ini, int(_flights.size()), adj, edges);
 }
 
 VVI Solver::solve_v2(Algorithm a) {
@@ -187,6 +193,12 @@ int Solver::dinic(int s, int t, VVI & adj, VE & edges) {
     return fval;
 }
 
+void Solver::add_edge(VVI &graph, VE &edges, int u, int v, int cap) {
+    graph[u].push_back(edges.size());
+    graph[v].push_back(edges.size());
+    edges.push_back(Edge(u, v, cap, 0));
+}
+
 // RESULTS. This modifies the residual graph
 // k is the number of pilots.
 // s_ini the source before applying nodes' demand
@@ -223,8 +235,3 @@ VVI Solver::get_results(int k, int s_ini, int t_ini, int num_flights, VVI &adj, 
     return results;
 }
 
-void Solver::add_edge(VVI &graph, VE &edges, int u, int v, int cap) {
-    graph[u].push_back(edges.size());
-    graph[v].push_back(edges.size());
-    edges.push_back(Edge(u, v, cap, 0));
-}

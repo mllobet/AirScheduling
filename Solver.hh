@@ -37,7 +37,6 @@ class Solver {
         void read(istream &file);
         VVI solve_v1(Algorithm a);
         VVI solve_v2(Algorithm a);
-        VVI get_results(int k, int s_ini, int t_ini, int num_flights, VVI &adj, VE &edges);
 
     private: 
         static const int INF;
@@ -51,4 +50,7 @@ class Solver {
 
         // Edmond Karp's algorithm
         int edmond_karp(int s, int t, VVI & graph, VE & edges);
+
+        // Get results, flights of each pilot
+        VVI get_results(int k, int s_ini, int t_ini, int num_flights, VVI &adj, VE &edges);
 };
