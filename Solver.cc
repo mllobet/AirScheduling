@@ -105,20 +105,26 @@ int Solver::edmond_karp(int s, int t, VVI & graph, VE & edges) {
             if (pred[t] != -1) break;
             for (int i : graph[cur]) {
                 Edge e = edges[i];
-                if (pred[e.v] == -1 and e.c > e.f) {
-                    pred[e.v] = i;
-                    q.push(e.v);
+                int v = e.to(cur);
+                if (pred[v] == -1 and e.cap(cur) > 0) {
+                    pred[v] = i;
+                    q.push(v);
                 }
             }
         }
         if (pred[t] == -1) break;
         int df = INF;
-        for (int u = t; u != s; u = edges[pred[u]].u) {
-            df = min(df, edges[pred[u]].c - edges[pred[u]].f);
+        int u = t;
+        while (u != s) {
+            int v = edges[pred[u]].to(u);
+            df = min(df, edges[pred[u]].cap(v));
+            u = v;
         }
-        for (int u =t; u != s; u = edges[pred[u]].u) {
-            edges[pred[u]].f += df;
-            edges[graph[edges[pred[u]].v][edges[pred[u]].rev]].f -= df;
+        u = t;
+        while (u != s) {
+            int v = edges[pred[u]].to(u);
+            edges[pred[u]].add(v, df);
+            u = v;
         }
         mFlow += df;
     }
@@ -130,55 +136,55 @@ int Solver::edmond_karp(int s, int t, VVI & graph, VE & edges) {
 // BFS to build the residual graph and distances for level graph.
 // Returns true if there is a path from s to t with cap > 0
 bool Solver::bfs(int s, int t, VI & distance, const VVI & adj, const VE & edges) {
-  queue<int> q;
-  q.push(s);
-  for (int i = 0; i < int(distance.size()); ++i) distance[i] = -1;
-	distance[s] = 0;
+    queue<int> q;
+    q.push(s);
+    for (int i = 0; i < int(distance.size()); ++i) distance[i] = -1;
+    distance[s] = 0;
 
-  while (!q.empty()) {
-    int u = q.front(); q.pop();
-    for (int i : adj[u]) {
-      Edge edge = edges[i];
-      int v = edge.to(u);
-      if (edge.cap(u) > 0 and distance[v] == -1) {
-        q.push(v);
-        distance[v] = distance[u]+1;
-      }
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        for (int i : adj[u]) {
+            Edge edge = edges[i];
+            int v = edge.to(u);
+            if (edge.cap(u) > 0 and distance[v] == -1) {
+                q.push(v);
+                distance[v] = distance[u]+1;
+            }
+        }
     }
-  }
-  return distance[t] != -1;
+    return distance[t] != -1;
 }
  
 int Solver::dfs (int u, int t, int fval, const VI & distance, const VVI & adj, VE & edges, VI & index) {
-	if (!fval)  return 0;
-	if (u == t)  return fval;
-  int & ind = index[u];
-  while (ind < int(adj[u].size())) {
-    Edge & edge = edges[adj[u][ind]];
-    int v = edge.to(u);
-    int c = edge.cap(u);
+    if (!fval)  return 0;
+    if (u == t)  return fval;
+    int & ind = index[u];
+    while (ind < int(adj[u].size())) {
+        Edge & edge = edges[adj[u][ind]];
+        int v = edge.to(u);
+        int c = edge.cap(u);
 
-    if (distance[u]+1 == distance[v] and c > 0) {
-      int f = dfs(v, t, min(fval, c), distance, adj, edges, index);
-      if (f) {
-        edge.add(u, f);
-        return f;
-      }
+        if (distance[u]+1 == distance[v] and c > 0) {
+            int f = dfs(v, t, min(fval, c), distance, adj, edges, index);
+            if (f) {
+                edge.add(u, f);
+                return f;
+            }
+        }
+        ++ind;
     }
-    ++ind;
-  }
-  return 0;
+    return 0;
 }
  
 int Solver::dinic(int s, int t, VVI & adj, VE & edges) {
-	int fval = 0;
-  VI distance(adj.size());
-  while (bfs(s, t, distance, adj, edges)) {
-    VI index(distance.size(), 0);
-		while (int f = dfs(s, t, INF, distance, adj, edges, index))
-      fval += f;
-	}
-	return fval;
+    int fval = 0;
+    VI distance(adj.size());
+    while (bfs(s, t, distance, adj, edges)) {
+        VI index(distance.size(), 0);
+        while (int f = dfs(s, t, INF, distance, adj, edges, index))
+            fval += f;
+    }
+    return fval;
 }
 
 // RESULTS. This modifies the residual graph
@@ -186,40 +192,39 @@ int Solver::dinic(int s, int t, VVI & adj, VE & edges) {
 // s_ini the source before applying nodes' demand
 // t_ini the sink before applying nodes' demand
 VVI Solver::get_results(int k, int s_ini, int t_ini, int num_flights, VVI &adj, VE &edges) {
-  VI act(adj.size(), 0);
-  vector<bool> taken(num_flights, false);
-  VVI results(k);
-  for (int id = 0; id < k; ++id) {
-    int u = s_ini;
-    while (u != t_ini) {
-      int & ind = act[u];
-      bool found = false;
-      while (!found and ind < int(adj[u].size())) {
-        Edge & e = edges[adj[u][ind]];
-        int v = e.to(u);
-        if (e.flow(u) > 0) {
-          e.add(u, -1);
-          u = v;
-          found = true;
+    VI act(adj.size(), 0);
+    vector<bool> taken(num_flights, false);
+    VVI results(k);
+    for (int id = 0; id < k; ++id) {
+        int u = s_ini;
+        while (u != t_ini) {
+            int & ind = act[u];
+            bool found = false;
+            while (!found and ind < int(adj[u].size())) {
+                Edge & e = edges[adj[u][ind]];
+                int v = e.to(u);
+                if (e.flow(u) > 0) {
+                    e.add(u, -1);
+                    u = v;
+                    found = true;
+                }
+                ++ind;
+            }
+            if (u != t_ini) {
+                int flight_id = u/2;
+                if (!taken[flight_id]) {
+                    results[id].push_back(flight_id);
+                    taken[flight_id] = true;
+                }
+                ++u; // Go to second node of that flight
+            }
         }
-        ++ind;
-      }
-      if (u != t_ini) {
-        int flight_id = u/2;
-        if (!taken[flight_id]) {
-          results[id].push_back(flight_id);
-          taken[flight_id] = true;
-        }
-        ++u; // Go to second node of that flight
-      }
     }
-  }
-  return results;
+    return results;
 }
 
 void Solver::add_edge(VVI &graph, VE &edges, int u, int v, int cap) {
     graph[u].push_back(edges.size());
-    graph[v].push_back(edges.size() + 1);
-    edges.push_back(Edge(u, v, cap, 0, graph[v].size() - 1));
-    edges.push_back(Edge(v, u, 0, 0, graph[u].size() - 1));
+    graph[v].push_back(edges.size());
+    edges.push_back(Edge(u, v, cap, 0));
 }

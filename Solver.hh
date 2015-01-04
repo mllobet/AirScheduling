@@ -14,9 +14,9 @@ struct flight {
 };
 
 struct Edge {
-    // from u, to v, with capacity c, flow f and index of reverse edge rev
-    int u, v, c, f, rev;
-    Edge(int u, int v, int c, int f, int rev) : u(u), v(v), c(c), f(f), rev(rev) {}
+    // from u, to v, with capacity c, flow f
+    int u, v, c, f;
+    Edge(int u, int v, int c, int f) : u(u), v(v), c(c), f(f) {}
     int flow(int w) { return u == w ? f : (-f); }
     int cap(int w) { return u == w ? (c - f) : f; }
     int to(int w) { return u == w ? v : u; }
