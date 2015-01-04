@@ -71,11 +71,10 @@ VVI Solver::solve_v1(Algorithm a) {
     // actual algorithm has to set up the source and drain connections to s_ini and d_ini
 
     
-    // To fill
-    int source_edge, sink_edge; // Edges from source to s_ini, and from sink to t_ini
+    int source_edge = add_edge(graph, edges, s, s_ini, 0); 
+    int sink_edge = add_edge(graph, edges, t, t_ini, 0); 
+    
     int num_flights = _flights.size();
-    VVI adj;
-    VE edges;
 
     // binary search in [low, high)
     int low = 1, high = num_flights+1;
@@ -90,10 +89,10 @@ VVI Solver::solve_v1(Algorithm a) {
 
       int ans;
       if (a == EdmondsKarp) {
-        ans = edmond_karp(s, t, adj, edges);
+        ans = edmond_karp(s, t, graph, edges);
       }
       else {
-        ans = dinic(s, t, adj, edges);
+        ans = dinic(s, t, graph, edges);
       }
 
       if (ans == num_flights + mid) {
@@ -103,7 +102,7 @@ VVI Solver::solve_v1(Algorithm a) {
         high = mid;
       }
     }
-    return get_results(low, s_ini, t_ini, num_flights, adj, edges);
+    return get_results(low, s_ini, t_ini, num_flights, graph, edges);
 }
 
 VVI Solver::solve_v2(Algorithm a) {
@@ -212,7 +211,7 @@ int Solver::edmond_karp(int s, int t, VVI & graph, VE & edges) {
 
 // BFS to build the residual graph and distances for level graph.
 // Returns true if there is a path from s to t with cap > 0
-bool Solver::bfs(int s, int t, VI & distance, const VVI & adj, const VE & edges) {
+bool Solver::bfs(int s, int t, VI & distance, const VVI & graph, const VE & edges) {
     queue<int> q;
     q.push(s);
     for (int i = 0; i < int(distance.size()); ++i) distance[i] = -1;
@@ -220,7 +219,7 @@ bool Solver::bfs(int s, int t, VI & distance, const VVI & adj, const VE & edges)
 
     while (!q.empty()) {
         int u = q.front(); q.pop();
-        for (int i : adj[u]) {
+        for (int i : graph[u]) {
             Edge edge = edges[i];
             int v = edge.to(u);
             if (edge.cap(u) > 0 and distance[v] == -1) {
@@ -232,17 +231,17 @@ bool Solver::bfs(int s, int t, VI & distance, const VVI & adj, const VE & edges)
     return distance[t] != -1;
 }
  
-int Solver::dfs (int u, int t, int fval, const VI & distance, const VVI & adj, VE & edges, VI & index) {
+int Solver::dfs (int u, int t, int fval, const VI & distance, const VVI & graph, VE & edges, VI & index) {
     if (!fval)  return 0;
     if (u == t)  return fval;
     int & ind = index[u];
-    while (ind < int(adj[u].size())) {
-        Edge & edge = edges[adj[u][ind]];
+    while (ind < int(graph[u].size())) {
+        Edge & edge = edges[graph[u][ind]];
         int v = edge.to(u);
         int c = edge.cap(u);
 
         if (distance[u]+1 == distance[v] and c > 0) {
-            int f = dfs(v, t, min(fval, c), distance, adj, edges, index);
+            int f = dfs(v, t, min(fval, c), distance, graph, edges, index);
             if (f) {
                 edge.add(u, f);
                 return f;
@@ -253,29 +252,31 @@ int Solver::dfs (int u, int t, int fval, const VI & distance, const VVI & adj, V
     return 0;
 }
  
-int Solver::dinic(int s, int t, VVI & adj, VE & edges) {
+int Solver::dinic(int s, int t, VVI & graph, VE & edges) {
     int fval = 0;
-    VI distance(adj.size());
-    while (bfs(s, t, distance, adj, edges)) {
+    VI distance(graph.size());
+    while (bfs(s, t, distance, graph, edges)) {
         VI index(distance.size(), 0);
-        while (int f = dfs(s, t, INF, distance, adj, edges, index))
+        while (int f = dfs(s, t, INF, distance, graph, edges, index))
             fval += f;
     }
     return fval;
 }
 
-void Solver::add_edge(VVI &graph, VE &edges, int u, int v, int cap) {
+int Solver::add_edge(VVI &graph, VE &edges, int u, int v, int cap) {
     graph[u].push_back(edges.size());
     graph[v].push_back(edges.size());
     edges.push_back(Edge(u, v, cap, 0));
+
+    return edges.size() - 1;
 }
 
 // RESULTS. This modifies the residual graph
 // k is the number of pilots.
 // s_ini the source before applying nodes' demand
 // t_ini the sink before applying nodes' demand
-VVI Solver::get_results(int k, int s_ini, int t_ini, int num_flights, VVI &adj, VE &edges) {
-    VI act(adj.size(), 0);
+VVI Solver::get_results(int k, int s_ini, int t_ini, int num_flights, VVI &graph, VE &edges) {
+    VI act(graph.size(), 0);
     vector<bool> taken(num_flights, false);
     VVI results(k);
     for (int id = 0; id < k; ++id) {
@@ -283,8 +284,8 @@ VVI Solver::get_results(int k, int s_ini, int t_ini, int num_flights, VVI &adj, 
         while (u != t_ini) {
             int & ind = act[u];
             bool found = false;
-            while (!found and ind < int(adj[u].size())) {
-                Edge & e = edges[adj[u][ind]];
+            while (!found and ind < int(graph[u].size())) {
+                Edge & e = edges[graph[u][ind]];
                 int v = e.to(u);
                 if (e.flow(u) > 0) {
                     e.add(u, -1);

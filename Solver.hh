@@ -41,7 +41,7 @@ class Solver {
 
     private: 
         static const int INF;
-        static void add_edge(VVI & graph, VE & edges, int u, int v, int cap);
+        static int add_edge(VVI & graph, VE & edges, int u, int v, int cap);
 
         // Dinics algorithm
         bool bfs(int s, int t, VI & distance, const VVI & adj, const VE & edges);
