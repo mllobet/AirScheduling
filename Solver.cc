@@ -34,13 +34,13 @@ VVI Solver::solve_v1(Algorithm a) {
     int t = size - 1;
     int s_ini = s - 2;
     int t_ini = s - 1;
-    VVI res(size, VI(size));
-    VI demands(size);
+
+    VVI graph(size, VI(size));
+    VE edges;
 
     map<int,VI> city_flights; 
     for (int i = 0; i < int(_flights.size()); ++i) {
         int orig = _flights[i].orig; 
-        //res[2*i][2*i+1] = 1; // set the capacity between the 2 nodes to 1
         if (city_flights.find(orig) == city_flights.end()) {
             city_flights[orig] = VI();
         }
@@ -51,21 +51,21 @@ VVI Solver::solve_v1(Algorithm a) {
     for (int i = 0; i < int(_flights.size()); ++i) {
         for (int flight: city_flights[_flights[i].dest]) {
             if (_flights[i].end + 15 <= _flights[flight].start) {
-                res[2*i+1][flight] = 1;
+                add_edge(graph, edges, 2*i+1, flight, 1);
             }
         }
     }
 
     // source and drain initial connections 
     for (int i = 0; i < int(_flights.size()); ++i){
-        res[s_ini][2*i] = 1;
-        res[t_ini][2*i+1] = 1; 
+        add_edge(graph, edges, s_ini, 2*i, 1);
+        add_edge(graph, edges, t_ini, 2*i+1, 1);
     } 
 
     // source and drain connections to set demand 
     for (int i = 0; i < int(_flights.size()); ++i) {
-        res[s][2*i+1]++;
-        res[t][2*i]++;
+        add_edge(graph, edges, s, 2*i+1, 1);
+        add_edge(graph, edges, t, 2*i, 1);
     }
 
     // actual algorithm has to set up the source and drain connections to s_ini and d_ini
