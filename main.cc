@@ -22,9 +22,11 @@ void print_results(string out_file, const vector<vector<int> > &results) {
 }
 
 void usage(string name) {
-    cout << "usage: " << name << " input_file output_file version algorithm" << endl << endl;
+    cout << "usage: " << name << " input_file output_file version algorithm [-t or -s]" << endl << endl;
     cout << "optional arguments:" << endl;
     cout << "-h: shows this help message" << endl << endl;
+    cout << "-t: prints only input file name and time to compute solution" << endl;
+    cout << "-s: prints only input file name and number of pilots in solution" << endl;
     cout << "version {1,2}" << endl;
     cout << "algorithm {ek,di} ek = Edmond Karp's, di = Dinic's" << endl;
     exit(-1);
@@ -54,6 +56,17 @@ int main(int argc, char *argv[]){
     double ti = clock();
     solution = s.solve(a, v);
     double t = (clock() - ti) / double(CLOCKS_PER_SEC);
-    cout << argv[1] << ' ' << solution.size() << endl;
-    //print_results(argv[2], solution);
+
+    if (argc == 6) { // print time measurements
+        if (strncmp(argv[5],"-s",3)) {
+            cout << argv[1] << ',' << t << endl;
+        } else if (strncmp(argv[5],"-t",3)) {
+            cout << argv[1] << ' ' << solution.size() << endl;
+        } else {
+            usage(argv[0]);
+        }
+    } else {
+        print_results(argv[2], solution);
+    }
+
 }
