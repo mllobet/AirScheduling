@@ -43,9 +43,12 @@ int main(int argc, char *argv[]){
 
     VVI solution;
     int version = atoi(argv[3]);
-    if (version == 1) solution = s.solve_v1(a);
-    else if (version == 2) solution = s.solve_v2(a);
+    Solver::Version v;
+    if (version == 1) v = Solver::V1;
+    else if (version == 2) v = Solver::V2;
     else usage(argv[0]);
+
+    solution = s.solve(a, v);
 
     print_results(argv[2], solution);
 }

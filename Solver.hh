@@ -33,11 +33,15 @@ class Solver {
             Dinic
         };
 
+        enum Version {
+          V1,
+          V2
+        };
+
         Solver();
         void read();
         void read(istream &is);
-        VVI solve_v1(Algorithm a);
-        VVI solve_v2(Algorithm a);
+        VVI solve(Algorithm a, Version version);
 
     private: 
         static const int INF;

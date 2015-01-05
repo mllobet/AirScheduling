@@ -22,10 +22,10 @@ void Solver::read(istream &is) {
 }
 
 /*
- * Solves version 1 of the problem, returns a list of crew assignations, one
+ * Solves the problem, returns a list of crew assignations, one
  * per element
  */
-VVI Solver::solve_v1(Algorithm a) {
+VVI Solver::solve(Algorithm a, Version version) {
     // Build graph
 
     // create 2 nodes per flight v_i and t_i (where v_i is in pos 2*i and t_i in 2*i + 1)
@@ -34,6 +34,9 @@ VVI Solver::solve_v1(Algorithm a) {
     int t = size - 1;
     int s_ini = s - 2;
     int t_ini = s - 1;
+
+    int capacity = 1;
+    if (version == V2) capacity = INF;
 
     VVI graph(size);
     VE edges;
@@ -51,100 +54,16 @@ VVI Solver::solve_v1(Algorithm a) {
     for (int i = 0; i < int(_flights.size()); ++i) {
         for (int f: city_flights[_flights[i].dest]) {
             if (_flights[i].end + 15 <= _flights[f/2].start) {
-                add_edge(graph, edges, 2*i+1, f, 1);
+                add_edge(graph, edges, 2*i+1, f, capacity);
             }
         }
     }
 
-    // source and drain initial connections 
-    for (int i = 0; i < int(_flights.size()); ++i){
-        add_edge(graph, edges, s_ini, 2*i, 1);
-        add_edge(graph, edges, 2*i+1, t_ini, 1);
-    } 
-
-    // source and drain connections to set demand 
-    for (int i = 0; i < int(_flights.size()); ++i) {
-        add_edge(graph, edges, s, 2*i+1, 1);
-        add_edge(graph, edges, 2*i, t, 1);
-    }
-
-    int source_edge = add_edge(graph, edges, s, s_ini, 0); 
-    int sink_edge = add_edge(graph, edges, t_ini, t, 0); 
-    
-    int num_flights = _flights.size();
-
-    // binary search in (low, high]
-    int low = 0, high = num_flights;
-    while (low+1 < high) {
-      // Reset graph
-      for (Edge &e : edges) {
-          e.f = 0;
+    // Add edge in each flight only if version2
+    if (version == V2) {
+      for (int i = 0; i < int(_flights.size()); ++i) {
+        add_edge(graph, edges, 2*i, 2*i+1, INF);
       }
-
-      int mid = (high-low)/2 + low;
-      edges[source_edge].c = edges[sink_edge].c = mid;
-
-      int ans;
-      if (a == EdmondsKarp) {
-          ans = edmond_karp(s, t, graph, edges);
-      }
-      else {
-          ans = dinic(s, t, graph, edges);
-      }
-
-      if (ans >= num_flights + mid) {
-          high = mid;
-      }
-      else {
-          low = mid;
-      }
-    }
-
-    // Run last time to run with k = high
-    edges[source_edge].c = edges[sink_edge].c = high;
-    if (a == EdmondsKarp) {
-        edmond_karp(s, t, graph, edges);
-    }
-    else {
-        dinic(s, t, graph, edges);
-    }
-    return get_results(high, s_ini, t_ini, num_flights, graph, edges);
-}
-
-VVI Solver::solve_v2(Algorithm a) {
-    // Build graph
-
-    // create 2 nodes per flight v_i and t_i (where v_i is in pos 2*i and t_i in 2*i + 1)
-    int size = _flights.size()*2 + 4;
-    int s = size - 2;
-    int t = size - 1;
-    int s_ini = s - 2;
-    int t_ini = s - 1;
-
-    VVI graph(size);
-    VE edges;
-
-    map<int,VI> city_flights; 
-    for (int i = 0; i < int(_flights.size()); ++i) {
-        int orig = _flights[i].orig; 
-        if (city_flights.find(orig) == city_flights.end()) {
-            city_flights[orig] = VI();
-        }
-        city_flights[orig].push_back(2*i); 
-    }
-
-    // add connecting flights
-    for (int i = 0; i < int(_flights.size()); ++i) {
-        for (int f: city_flights[_flights[i].dest]) {
-            if (_flights[i].end + 15 <= _flights[f/2].start) {
-                add_edge(graph, edges, 2*i+1, f, INF);
-            }
-        }
-    }
-
-    // Add edge in each flight
-    for (int i = 0; i < int(_flights.size()); ++i) {
-      add_edge(graph, edges, 2*i, 2*i+1, INF);
     }
 
     // source and drain initial connections 
