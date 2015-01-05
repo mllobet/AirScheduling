@@ -260,4 +260,3 @@ VVI Solver::get_results(int k, int s_ini, int t_ini, int num_flights, VVI &graph
     }
     return results;
 }
-

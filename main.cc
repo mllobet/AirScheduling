@@ -1,8 +1,11 @@
 #include <iostream>
 #include <fstream>
 #include <istream>
+
 #include <cstdio>
 #include <cstring>
+#include <ctime>
+
 #include "Solver.hh"
 
 using namespace std;
@@ -43,12 +46,14 @@ int main(int argc, char *argv[]){
 
     VVI solution;
     int version = atoi(argv[3]);
-    Solver::Version v;
+    Solver::Version v = Solver::V1;
     if (version == 1) v = Solver::V1;
     else if (version == 2) v = Solver::V2;
     else usage(argv[0]);
 
+    double ti = clock();
     solution = s.solve(a, v);
-
-    print_results(argv[2], solution);
+    double t = (clock() - ti) / double(CLOCKS_PER_SEC);
+    cout << argv[1] << ' ' << solution.size() << endl;
+    //print_results(argv[2], solution);
 }
