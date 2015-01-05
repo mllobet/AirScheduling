@@ -1,4 +1,4 @@
-BIN = airSchedule
+BIN = airSchedule 
 SRC = main.cc Solver.cc
 OBJ = ${SRC:.cc=.o}
 CC = g++	
