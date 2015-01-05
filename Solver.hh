@@ -35,7 +35,7 @@ class Solver {
 
         Solver();
         void read();
-        void read(istream &file);
+        void read(istream &is);
         VVI solve_v1(Algorithm a);
         VVI solve_v2(Algorithm a);
 
