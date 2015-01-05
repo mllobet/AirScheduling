@@ -78,7 +78,7 @@ VVI Solver::solve_v1(Algorithm a) {
     while (low+1 < high) {
       // Reset graph
       for (Edge &e : edges) {
-        e.f = 0;
+          e.f = 0;
       }
 
       int mid = (high-low)/2 + low;
@@ -121,7 +121,7 @@ VVI Solver::solve_v2(Algorithm a) {
     int s_ini = s - 2;
     int t_ini = s - 1;
 
-    VVI graph(size, VI(size));
+    VVI graph(size);
     VE edges;
 
     map<int,VI> city_flights; 
@@ -134,45 +134,72 @@ VVI Solver::solve_v2(Algorithm a) {
     }
 
     // add connecting flights
-    map<int,set<int>> connecting_flights;
     for (int i = 0; i < int(_flights.size()); ++i) {
         for (int f: city_flights[_flights[i].dest]) {
             if (_flights[i].end + 15 <= _flights[f/2].start) {
-                add_edge(graph, edges, 2*i+1, f, 1);
-                for (int conn_f : city_flights[_flights[f/2].dest]) {
-                    if (_flights[f/2].end + 15 <= _flights[conn_f/2].start) {
-                        connecting_flights[2*i+1].insert(conn_f);
-                    }
-                }
+                add_edge(graph, edges, 2*i+1, f, INF);
             }
         }
     }
 
-    // set connecitng flights
-    for (int i = 0; i< int(_flights.size()); ++i) {
-        for (int conn_f : connecting_flights[2*i+1]) {
-            add_edge(graph, edges, 2*i+1, conn_f, 1); 
-        }
+    // Add edge in each flight
+    for (int i = 0; i < int(_flights.size()); ++i) {
+      add_edge(graph, edges, 2*i, 2*i+1, INF);
     }
 
     // source and drain initial connections 
     for (int i = 0; i < int(_flights.size()); ++i){
         add_edge(graph, edges, s_ini, 2*i, 1);
-        add_edge(graph, edges, t_ini, 2*i+1, 1);
+        add_edge(graph, edges, 2*i+1, t_ini, 1);
     } 
 
     // source and drain connections to set demand 
     for (int i = 0; i < int(_flights.size()); ++i) {
         add_edge(graph, edges, s, 2*i+1, 1);
-        add_edge(graph, edges, t, 2*i, 1);
+        add_edge(graph, edges, 2*i, t, 1);
     }
-    switch (a) {
-        case EdmondsKarp :
-            break;
-        case Dinic :
-            break;
+
+    int source_edge = add_edge(graph, edges, s, s_ini, 0); 
+    int sink_edge = add_edge(graph, edges, t_ini, t, 0); 
+    
+    int num_flights = _flights.size();
+
+    // binary search in (low, high]
+    int low = 0, high = num_flights;
+    while (low+1 < high) {
+      // Reset graph
+      for (Edge &e : edges) {
+          e.f = 0;
+      }
+
+      int mid = (high-low)/2 + low;
+      edges[source_edge].c = edges[sink_edge].c = mid;
+
+      int ans;
+      if (a == EdmondsKarp) {
+          ans = edmond_karp(s, t, graph, edges);
+      }
+      else {
+          ans = dinic(s, t, graph, edges);
+      }
+
+      if (ans >= num_flights + mid) {
+          high = mid;
+      }
+      else {
+          low = mid;
+      }
     }
-    return VVI();
+
+    // Run last time to run with k = high
+    edges[source_edge].c = edges[sink_edge].c = high;
+    if (a == EdmondsKarp) {
+        edmond_karp(s, t, graph, edges);
+    }
+    else {
+        dinic(s, t, graph, edges);
+    }
+    return get_results(high, s_ini, t_ini, num_flights, graph, edges);
 }
 
 // Edmonds Karp's
@@ -305,7 +332,7 @@ VVI Solver::get_results(int k, int s_ini, int t_ini, int num_flights, VVI &graph
             if (u != t_ini) {
                 int flight_id = u/2;
                 if (!taken[flight_id]) {
-                    results[id].push_back(flight_id);
+                    results[id].push_back(flight_id+1);
                     taken[flight_id] = true;
                 }
                 ++u; // Go to second node of that flight
