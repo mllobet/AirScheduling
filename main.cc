@@ -2,6 +2,7 @@
 #include <fstream>
 #include <istream>
 #include <cstdio>
+#include <cstring>
 #include "Solver.hh"
 
 using namespace std;
